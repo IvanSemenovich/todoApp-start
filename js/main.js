@@ -18,21 +18,9 @@ function addTask(e) {
     done: false,
   };
 
-  let cssClass = newTask.done ? "task-title task-title--done" : "task-title";
-
-  let insertHTML = ` <li id = "${newTask.id}" class="list-group-item d-flex justify-content-between task-item">
-              <span class="${cssClass}">${newTask.text}</span>
-              <div class="task-item__buttons">
-                <button  type="button" data-action="done" class="btn-action">
-                  <img src="./img/tick.svg" alt="Done" width="18" height="18" />
-                </button>
-                <button type="button" data-action="delete" class="btn-action">
-                  <img src="./img/cross.svg" alt="Done" width="18" height="18" />
-                </button>
-              </div>
-            </li>`;
   tasks.push(newTask);
-  taskList.insertAdjacentHTML("beforeend", insertHTML);
+  saveToLocalStorage();
+  renderTask(newTask);
   taskInput.value = "";
   render();
 }
@@ -52,6 +40,7 @@ function removeTask(event) {
     });
 
     tasks.splice(index, 1);
+    saveToLocalStorage();
     parentNode.remove();
   }
   render();
@@ -74,6 +63,7 @@ function completeTask(event) {
     }
   });
   task.done = !task.done;
+  saveToLocalStorage();
   parentNode.classList.toggle("task-title--done");
 }
 
@@ -88,3 +78,33 @@ function render() {
   }
 }
 render();
+
+function saveToLocalStorage() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+if (localStorage.getItem("tasks")) {
+  tasks = JSON.parse(localStorage.getItem("tasks"));
+}
+
+tasks.forEach(function (task) {
+  renderTask(task);
+});
+
+function renderTask(task) {
+  let cssClass = task.done ? "task-title task-title--done" : "task-title";
+
+  let insertHTML = ` <li id = "${task.id}" class="list-group-item d-flex justify-content-between task-item">
+              <span class="${cssClass}">${task.text}</span>
+              <div class="task-item__buttons">
+                <button  type="button" data-action="done" class="btn-action">
+                  <img src="./img/tick.svg" alt="Done" width="18" height="18" />
+                </button>
+                <button type="button" data-action="delete" class="btn-action">
+                  <img src="./img/cross.svg" alt="Done" width="18" height="18" />
+                </button>
+              </div>
+            </li>`;
+
+  taskList.insertAdjacentHTML("beforeend", insertHTML);
+}
