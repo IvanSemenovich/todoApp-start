@@ -1,16 +1,25 @@
-let taskList = document.querySelector("#tasksList");
-let taskInput = document.querySelector("#taskInput");
-let form = document.querySelector("#form");
-let emptyList = document.querySelector("#emptyList");
+const taskList = document.querySelector("#tasksList");
+const taskInput = document.querySelector("#taskInput");
+const form = document.querySelector("#form");
+const emptyList = document.querySelector("#emptyList");
 
 let tasks = [];
 
-// Додати нову задачу в список
+// Завантаження з localStorage
+if (localStorage.getItem("tasks")) {
+  tasks = JSON.parse(localStorage.getItem("tasks"));
+  tasks.forEach(renderTask);
+}
+renderEmptyLabel();
+
+// Додати нову задачу
 form.addEventListener("submit", addTask);
 
 function addTask(e) {
   e.preventDefault();
-  let textFromInput = taskInput.value;
+
+  const textFromInput = taskInput.value.trim();
+  if (textFromInput === "") return;
 
   const newTask = {
     id: Date.now(),
@@ -18,73 +27,82 @@ function addTask(e) {
     done: false,
   };
 
-  let cssClass = newTask.done ? "task-title task-title--done" : "task-title";
-
-  let insertHTML = ` <li id = "${newTask.id}" class="list-group-item d-flex justify-content-between task-item">
-              <span class="${cssClass}">${newTask.text}</span>
-              <div class="task-item__buttons">
-                <button  type="button" data-action="done" class="btn-action">
-                  <img src="./img/tick.svg" alt="Done" width="18" height="18" />
-                </button>
-                <button type="button" data-action="delete" class="btn-action">
-                  <img src="./img/cross.svg" alt="Done" width="18" height="18" />
-                </button>
-              </div>
-            </li>`;
   tasks.push(newTask);
-  taskList.insertAdjacentHTML("beforeend", insertHTML);
+  saveToLocalStorage();
+
+  renderTask(newTask);
+
   taskInput.value = "";
-  render();
+  taskInput.focus();
+
+  renderEmptyLabel();
 }
 
-// Удалити задачу
+// Рендер однієї задачі
+function renderTask(task) {
+  const cssClass = task.done ? "task-title task-title--done" : "task-title";
+
+  const taskHTML = `
+    <li id="${task.id}" class="list-group-item d-flex justify-content-between task-item">
+      <span class="${cssClass}">${task.text}</span>
+      <div class="task-item__buttons">
+        <button type="button" data-action="done" class="btn-action">
+          <img src="./img/tick.svg" alt="Done" width="18" height="18" />
+        </button>
+        <button type="button" data-action="delete" class="btn-action">
+          <img src="./img/cross.svg" alt="Delete" width="18" height="18" />
+        </button>
+      </div>
+    </li>
+  `;
+
+  taskList.insertAdjacentHTML("beforeend", taskHTML);
+}
+
+// Видалити задачу
 taskList.addEventListener("click", removeTask);
 
 function removeTask(event) {
   if (event.target.dataset.action === "delete") {
     const parentNode = event.target.closest(".list-group-item");
-    let id = parentNode.id;
+    const id = Number(parentNode.id);
 
-    const index = tasks.findIndex(function (task) {
-      if (task.id == id) {
-        return true;
-      }
-    });
+    tasks = tasks.filter((task) => task.id !== id);
+    saveToLocalStorage();
 
-    tasks.splice(index, 1);
     parentNode.remove();
+    renderEmptyLabel();
   }
-  render();
 }
 
-// Зробити задачу виконаною
-
+// Позначити задачу як виконану
 taskList.addEventListener("click", completeTask);
 
 function completeTask(event) {
   if (event.target.dataset.action !== "done") return;
 
   const parentNode = event.target.closest(".list-group-item");
-
   const id = Number(parentNode.id);
 
-  const task = tasks.find(function (task) {
-    if (task.id === id) {
-      return true;
-    }
-  });
+  const task = tasks.find((task) => task.id === id);
   task.done = !task.done;
-  parentNode.classList.toggle("task-title--done");
+
+  saveToLocalStorage();
+
+  const taskTitle = parentNode.querySelector("span");
+  taskTitle.classList.toggle("task-title--done");
 }
 
-// Ховати "Нема задач" якщо список пустий
-
-function render() {
-  let task = document.querySelector(".task-item");
-  if (task) {
-    emptyList.classList.add("none");
-  } else {
+// Відображати або ховати "Немає задач"
+function renderEmptyLabel() {
+  if (tasks.length === 0) {
     emptyList.classList.remove("none");
+  } else {
+    emptyList.classList.add("none");
   }
 }
-render();
+
+// Зберегти масив задач у localStorage
+function saveToLocalStorage() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
